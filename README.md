@@ -35,9 +35,9 @@ LawCode/
 ## 使用說明
 
 1. 資料取得:
-- 到[司法院資料開放平臺](https://opendata.judicial.gov.tw/)取得資料
+    - 到[司法院資料開放平臺](https://opendata.judicial.gov.tw/)取得資料
 
-    ![](https://i.imgur.com/0MVCwlE.png)
+        ![](https://i.imgur.com/0MVCwlE.png)
 
 2. 使用 LoadData 函數讀取資料
     - 參數
