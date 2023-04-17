@@ -78,10 +78,10 @@ def LoadData(noSummaryCourt = False, noDistrictCourt = False,
         json.dump(lists, f, ensure_ascii=False)
 
 
-def analysis_data(cond):
+def AnalysisData(Cond):
     with open('result/total_info.json','r',encoding='utf-8') as f:
         contents = json.load(f)
-    feature = cond.split(',')
+    feature = Cond.split(',')
     data = []
     index = []
     for i in contents:
