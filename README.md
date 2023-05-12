@@ -1,4 +1,4 @@
-# LawCode 內榮介紹
+# LawCode 內容介紹
 
 ## 部署方式
 - Clone this repo
