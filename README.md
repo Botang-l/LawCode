@@ -49,6 +49,8 @@ LawCode/
     `YearTo` : 整數，表示要篩選的案件年分上限，預設為 10000。 
     `Jcase` : 字串，表示要篩選的案件類型，預設為 None。 
     `Jtitle` : 字串，表示要篩選的案件標題，預設為 None。
+    `OnlyJudge` : 布林值，表示是否只要保留判決案件， 預設為 False。
+    `OnlyOrder` : 布林值，表示是否只要保留裁定案件， 預設為 False。
     
     - 產出結果
     `./result/data.json` : 符合使用者篩選條件的判決資料全文
@@ -66,7 +68,7 @@ LawCode/
 
     - 產出結果
     `result.csv` : 經過特徵篩選後產生的feature。
-
+        > feature 中，判賠比率欄位微程式碼自動產生，若為空值表示程式碼未自動抓取判決結果。
 4. 使用 MachineLearning 函數進行機器學習
     - 無參數
     - 產出結果 : 各機器學習使用率
