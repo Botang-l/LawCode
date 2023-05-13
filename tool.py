@@ -99,13 +99,13 @@ def LoadData(noSummaryCourt = False, noDistrictCourt = False,
                         words.append(content["JFULL"])
                         titles.append(name)
 
-        print('其中有',len(titles),'個檔案符合您的篩選條件，相關輸出以放置於 result 資料夾')
-        with open('result/data.json','w',encoding='utf-8') as f:
-            json.dump(words, f, ensure_ascii=False)
-        with open('result/path.json','w',encoding='utf-8') as f:
-            json.dump(titles, f, ensure_ascii=False)
-        with open('result/total_info.json','w',encoding='utf-8') as f:
-            json.dump(lists, f, ensure_ascii=False)
+    print('其中有',len(titles),'個檔案符合您的篩選條件，相關輸出以放置於 result 資料夾')
+    with open('result/data.json','w',encoding='utf-8') as f:
+        json.dump(words, f, ensure_ascii=False)
+    with open('result/path.json','w',encoding='utf-8') as f:
+        json.dump(titles, f, ensure_ascii=False)
+    with open('result/total_info.json','w',encoding='utf-8') as f:
+        json.dump(lists, f, ensure_ascii=False)
 
 def LoadCEData(OnlyJudge=False, OnlyOrder=False):
     current_dir = os.getcwd()
@@ -253,7 +253,6 @@ def chinese_to_number(a):
         if(a[i]=='乘萬'):
             b=b*10000
         elif(i==0 and int(a[i])<1):
-            print(int(a[i]))
             b+=10**len(a[i])
         else:
             c = int(a[i])
