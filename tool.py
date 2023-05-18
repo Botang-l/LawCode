@@ -8,6 +8,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 import re
+from sklearn.metrics import roc_auc_score
+from sklearn.preprocessing import OneHotEncoder
 
 s='\d*'
 s0='萬'
@@ -33,7 +35,7 @@ s20='總計'
 g1='判決如下：'
 #訴請判令：被告應給付7,190,144元
 
-def CountFilter( path, noSummaryCourt, noDistrictCourt, noHighCourt, noSupremeCount):
+def CountFilter(path, noSummaryCourt, noDistrictCourt, noHighCourt, noSupremeCount):
     
     if(noSummaryCourt and ('簡易庭' in path)):
         return(True)
@@ -60,7 +62,7 @@ def TypeFilter(file, YearFrom,YearTo, Jtitle):
 def LoadData(noSummaryCourt = False, noDistrictCourt = False,
     noHighCourt = False, noSupremeCount = False, YearFrom = 0,
     YearTo = 10000, Jcase = None, Jtitle = None, 
-    OnlyJudge=False, OnlyOrder=False):
+    OnlyJudge = False, OnlyOrder = False):
     # 篩選條件
     
     # 當前檔案目錄
@@ -80,7 +82,8 @@ def LoadData(noSummaryCourt = False, noDistrictCourt = False,
         # 檢查是否為檔案而非目錄
         if os.path.isfile(file):
             case = file.split(',')[2]
-            if case == Jcase:
+            
+            if (case == Jcase):
                 with open(file, 'r',encoding='utf-8') as f:
                     content = json.load(f)
                     if(TypeFilter(content, YearFrom, YearTo, Jtitle)):
@@ -176,10 +179,10 @@ def AnalysisData(Cond, MaxLimit=True):
     print('失敗比數', error)
 
 
-def MachineLearning():
+def MachineLearning(path='result/result.csv'):
     
     # 資料前處理
-    data = pd.read_csv('result/result.csv',sep=',')
+    data = pd.read_csv(path,sep=',')
     data.drop(columns=data.columns[0], axis=1, inplace=True)
     columns = list(data.columns)
     feature = columns[:-1]
@@ -198,30 +201,40 @@ def MachineLearning():
     lr = LogisticRegression()
     lr.fit(X_train_std, X_test)
     print('LR 準確率:',round(lr.score(y_train_std, y_test)*100,3),'%')
+    print('LR AUC:',round(roc_auc_score(y_test, lr.predict_proba(y_train_std)[:, 1]),3))
+    print()
 
     # LDA
     from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
     lda = LinearDiscriminantAnalysis()
     lda.fit(X_train_std, X_test)
     print('LDA 準確率:',round(lda.score(y_train_std, y_test)*100,3),'%')
+    print('LDA AUC:',round(roc_auc_score(y_test, lda.predict_proba(y_train_std)[:, 1]),3))
+    print()
 
     # KNN
     from sklearn.neighbors import KNeighborsClassifier
     knn = KNeighborsClassifier()
     knn.fit(X_train_std, X_test)
     print('KNN 準確率:',round(knn.score(y_train_std, y_test)*100,3),'%')
+    print('KNN AUC:',round(roc_auc_score(y_test, knn.predict_proba(y_train_std)[:, 1]),3))
+    print()
 
     # 隨機森林模型
     from sklearn.ensemble import RandomForestClassifier
     rfc=RandomForestClassifier()
     rfc.fit(X_train_std, X_test)
     print('RFC 準確率:',round(rfc.score(y_train_std, y_test)*100,3),'%')
+    print('RFC AUC:',round(roc_auc_score(y_test, rfc.predict_proba(y_train_std)[:, 1]),3))
+    print()
 
     # SVM
     from sklearn.svm import LinearSVC
     svm=LinearSVC()
     svm.fit(X_train_std, X_test)
     print('SVM 準確率:',round(svm.score(y_train_std, y_test)*100,3),'%')
+    #print('SVM AUC:',round(roc_auc_score(y_test, svm.predict_proba(y_train_std)[:, 1])))
+    print()
 
 def get_claimed_amount(text): 
     try:
@@ -279,3 +292,72 @@ def get_total_amount(text):
             return
     except:
         return
+    
+def DeleteNull_and_OneHotEncoding():
+    data = pd.read_csv('result/result.csv',sep=',')
+    #data = data.drop('裁定',axis=1)
+    #data = data.drop('臺灣新北地方法院',axis=1)
+    data.columns.values[0] = '判決名稱'
+    with open('result/total_info.json','r',encoding='utf-8') as f:
+        contents = json.load(f)
+    title = []
+    for i in contents:
+        title.append(i['JTITLE'].replace('等',''))
+    data = data.assign(判決案由 = title)   
+    with open('result/path.json','r',encoding='utf-8') as f:
+        contents = json.load(f)
+    year = []
+    court = []
+    num_except = 0
+    for i in contents:
+        try:
+            y = re.search('\d+年度',i).group().replace('年度','')
+        
+        except:
+            y = re.search('\d+年',i).group().replace('年','')
+            num_except += 1
+
+        c = re.search('\w+法院',i).group()
+        year.append(y)
+        court.append(c)
+        
+    #print('錯誤數 :', num_except, '以解決 :', 1)
+    data = data.assign(法院別 = court)
+    data = data.assign(年度 = year)
+    data = data.dropna()
+    data = data.assign(民法第227條之2_ = lambda x: x['民法第227-2條'] + x['第227條之2']+x['227條第2']+x['二二七之二']+x['二二七條之二']+x['情勢變更']+x['情事變更'])
+    data = data.drop(['民法第227-2條','第227條之2', '227條第2', '二二七之二', '二二七條之二', '情勢變更', '情事變更'],axis=1)
+    data['民法第227條之2_'] = data['民法第227條之2_'].apply(lambda x: min(x, 1))
+    data = data.assign(民法第495條_ = lambda x: x['民法第495條'] + x['第四九五'] + x['四百九十五']) 
+    data = data.drop(['民法第495條','第四九五','四百九十五'],axis=1)
+   
+
+    # 將需要編碼的欄位取出
+    cols_to_encode = ['法院別', '年度', '判決案由']
+    data_to_encode = data[cols_to_encode]
+
+    # 創建 OneHotEncoder 對象
+    encoder = OneHotEncoder()
+
+    # 使用 OneHotEncoder 對需要編碼的欄位進行 one-hot 編碼
+    onehot = encoder.fit_transform(data_to_encode).toarray()
+
+    # 將 one-hot 編碼後的結果轉換成 DataFrame
+    onehot_df = pd.DataFrame(onehot, columns=encoder.get_feature_names_out(cols_to_encode))
+
+    # 將編碼後的結果與未編碼的欄位結合起來
+    result_df = pd.concat([onehot_df, data.drop(cols_to_encode, axis=1).reset_index(drop=True)], axis=1)
+    result_df = result_df.drop(['判決名稱'], axis=1)
+    df = result_df['判賠比率'].rank(ascending=False)
+    # 創建 result 欄位
+    result_df['結果'] = df.apply(lambda x: 1 if x <= len(df)/2 else 0)
+    result_df = result_df.drop('判賠比率', axis=1)
+    result_df.to_csv('result/result.csv',encoding="UTF-8-sig", index=False) 
+ 
+def data_concatenation(new_feature, origin_features):
+    data = pd.read_csv('result/result.csv',sep=',')
+    origin_features = origin_features.split('、')
+    data[new_feature] = data[origin_features].sum(axis=1)
+    data = data.drop(origin_features,axis=1)
+    data[new_feature] = data[new_feature].apply(lambda x: min(x, 1))
+    data.to_csv('result/result.csv',encoding="UTF-8-sig", index=False) 
